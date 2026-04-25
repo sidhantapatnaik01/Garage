@@ -1,0 +1,113 @@
+'use client'
+
+import { useState, useEffect } from 'react'
+import { Menu, X, Wrench } from 'lucide-react'
+import { siteConfig } from '@/config/site'
+import { Button } from '@/components/ui/button'
+
+const navLinks = [
+  { label: 'Models', href: '#models' },
+  { label: 'Before & After', href: '#before-after' },
+  { label: 'Services', href: '#services' },
+  { label: 'Gallery', href: '#gallery' },
+  { label: 'Contact', href: '#contact' },
+]
+
+export default function Header() {
+  const [scrolled, setScrolled] = useState(false)
+  const [open, setOpen] = useState(false)
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 20)
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
+
+  const handleNav = (href: string) => {
+    setOpen(false)
+    document.querySelector(href)?.scrollIntoView({ behavior: 'smooth' })
+  }
+
+  return (
+    <header
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+        scrolled ? 'bg-black/80 backdrop-blur-xl border-b border-white/5 shadow-lg' : 'bg-transparent'
+      }`}
+    >
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between h-16">
+          {/* Logo */}
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-accent flex items-center justify-center shadow-lg shadow-accent/30">
+              <Wrench className="w-4 h-4 text-white" />
+            </div>
+            <div>
+              <span className="text-white font-bold text-lg leading-none">{siteConfig.name}</span>
+              <p className="text-white/40 text-xs leading-none mt-0.5">{siteConfig.location}</p>
+            </div>
+          </div>
+
+          {/* Desktop nav */}
+          <nav className="hidden md:flex items-center gap-1">
+            {navLinks.map((link) => (
+              <button
+                key={link.href}
+                onClick={() => handleNav(link.href)}
+                className="text-white/60 hover:text-white text-sm px-3 py-2 rounded-lg hover:bg-white/5 transition-colors"
+              >
+                {link.label}
+              </button>
+            ))}
+          </nav>
+
+          {/* CTA */}
+          <div className="hidden md:flex items-center gap-3">
+            <a href={`tel:${siteConfig.phone}`} className="text-white/60 hover:text-white text-sm transition-colors">
+              {siteConfig.phone}
+            </a>
+            <Button size="sm" onClick={() => handleNav('#contact')}>
+              Get Quote
+            </Button>
+          </div>
+
+          {/* Mobile hamburger */}
+          <button
+            onClick={() => setOpen(!open)}
+            className="md:hidden p-2 text-white/70 hover:text-white transition-colors"
+            aria-label="Toggle menu"
+          >
+            {open ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+          </button>
+        </div>
+      </div>
+
+      {/* Mobile menu */}
+      {open && (
+        <div className="md:hidden bg-black/95 backdrop-blur-xl border-b border-white/5">
+          <div className="px-4 py-4 space-y-1">
+            {navLinks.map((link) => (
+              <button
+                key={link.href}
+                onClick={() => handleNav(link.href)}
+                className="w-full text-left text-white/70 hover:text-white text-sm px-3 py-3 rounded-lg hover:bg-white/5 transition-colors"
+              >
+                {link.label}
+              </button>
+            ))}
+            <div className="pt-3 border-t border-white/10 space-y-2">
+              <a
+                href={`tel:${siteConfig.phone}`}
+                className="block text-center text-white/60 text-sm py-2"
+              >
+                {siteConfig.phone}
+              </a>
+              <Button className="w-full" onClick={() => handleNav('#contact')}>
+                Get Quote
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+    </header>
+  )
+}
