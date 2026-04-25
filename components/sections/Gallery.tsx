@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, ZoomIn } from 'lucide-react'
 
@@ -21,8 +21,28 @@ const GALLERY_ITEMS = [
 export default function Gallery() {
   const [filter, setFilter] = useState('All')
   const [lightbox, setLightbox] = useState<typeof GALLERY_ITEMS[0] | null>(null)
+  const closeBtnRef = useRef<HTMLButtonElement>(null)
+  const lastFocusedRef = useRef<HTMLElement | null>(null)
 
   const filtered = filter === 'All' ? GALLERY_ITEMS : GALLERY_ITEMS.filter((g) => g.category === filter)
+
+  // Escape to close + focus management + body scroll lock
+  useEffect(() => {
+    if (!lightbox) return
+    lastFocusedRef.current = document.activeElement as HTMLElement
+    closeBtnRef.current?.focus()
+
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setLightbox(null) }
+    document.addEventListener('keydown', onKey)
+    const prevOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+
+    return () => {
+      document.removeEventListener('keydown', onKey)
+      document.body.style.overflow = prevOverflow
+      lastFocusedRef.current?.focus?.()
+    }
+  }, [lightbox])
 
   return (
     <section id="gallery" className="py-24 bg-[#080808]">
@@ -41,12 +61,14 @@ export default function Gallery() {
         </motion.div>
 
         {/* Filter tabs */}
-        <div className="flex flex-wrap gap-2 justify-center mb-10">
+        <div className="flex flex-wrap gap-2 justify-center mb-10" role="tablist" aria-label="Filter gallery">
           {CATEGORIES.map((cat) => (
             <button
               key={cat}
               onClick={() => setFilter(cat)}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+              role="tab"
+              aria-selected={filter === cat}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
                 filter === cat
                   ? 'bg-accent text-white shadow-lg shadow-accent/25'
                   : 'bg-white/5 text-white/50 hover:bg-white/10 hover:text-white/80'
@@ -61,7 +83,7 @@ export default function Gallery() {
         <motion.div layout className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
           <AnimatePresence>
             {filtered.map((item) => (
-              <motion.div
+              <motion.button
                 key={item.id}
                 layout
                 initial={{ opacity: 0, scale: 0.9 }}
@@ -69,7 +91,8 @@ export default function Gallery() {
                 exit={{ opacity: 0, scale: 0.9 }}
                 transition={{ duration: 0.3 }}
                 onClick={() => setLightbox(item)}
-                className="group relative rounded-2xl bg-white/[0.03] border border-white/[0.06] p-6 cursor-pointer hover:bg-white/[0.06] hover:-translate-y-1 transition-all duration-300 aspect-video flex flex-col justify-between"
+                aria-label={`View details: ${item.label}`}
+                className="group relative rounded-2xl bg-white/[0.03] border border-white/[0.06] p-6 cursor-pointer hover:bg-white/[0.06] hover:-translate-y-1 transition-all duration-300 aspect-video flex flex-col justify-between text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
               >
                 <div className="flex justify-between items-start">
                   <span
@@ -78,10 +101,10 @@ export default function Gallery() {
                   >
                     {item.category}
                   </span>
-                  <ZoomIn className="w-4 h-4 text-white/20 group-hover:text-white/60 transition-colors" />
+                  <ZoomIn className="w-4 h-4 text-white/20 group-hover:text-white/60 transition-colors" aria-hidden="true" />
                 </div>
                 <div>
-                  <div className="text-5xl mb-3">{item.emoji}</div>
+                  <div className="text-5xl mb-3" aria-hidden="true">{item.emoji}</div>
                   <h3 className="text-white font-medium text-sm">{item.label}</h3>
                   <p className="text-white/30 text-xs mt-1">{item.detail}</p>
                 </div>
@@ -89,7 +112,7 @@ export default function Gallery() {
                   className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"
                   style={{ boxShadow: `inset 0 0 40px ${item.color}10` }}
                 />
-              </motion.div>
+              </motion.button>
             ))}
           </AnimatePresence>
         </motion.div>
@@ -104,6 +127,9 @@ export default function Gallery() {
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4"
             onClick={() => setLightbox(null)}
+            role="dialog"
+            aria-modal="true"
+            aria-label={lightbox.label}
           >
             <motion.div
               initial={{ scale: 0.8, opacity: 0 }}
@@ -114,12 +140,14 @@ export default function Gallery() {
               onClick={(e) => e.stopPropagation()}
             >
               <button
+                ref={closeBtnRef}
                 onClick={() => setLightbox(null)}
-                className="absolute top-4 right-4 p-1.5 rounded-lg bg-white/5 hover:bg-white/10 transition-colors"
+                aria-label="Close"
+                className="absolute top-4 right-4 p-1.5 rounded-lg bg-white/5 hover:bg-white/10 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
               >
                 <X className="w-4 h-4 text-white/60" />
               </button>
-              <div className="text-7xl mb-5">{lightbox.emoji}</div>
+              <div className="text-7xl mb-5" aria-hidden="true">{lightbox.emoji}</div>
               <span
                 className="text-xs font-medium px-3 py-1 rounded-full mb-4 inline-block"
                 style={{ background: `${lightbox.color}20`, color: lightbox.color }}

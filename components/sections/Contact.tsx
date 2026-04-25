@@ -6,16 +6,18 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { toast } from 'sonner'
-import { Upload, X, MapPin, Phone, Clock, MessageSquare } from 'lucide-react'
+import { Upload, X, MapPin, Phone, Clock, MessageSquare, Info } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { CAR_MODELS } from '@/data/models'
 import { siteConfig, buildWhatsAppUrl } from '@/config/site'
 
+const phoneRegex = /^[+]?[0-9\s\-()]{10,15}$/
+
 const schema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
-  phone: z.string().min(10, 'Enter a valid phone number').max(13, 'Phone number too long'),
+  phone: z.string().regex(phoneRegex, 'Enter a valid phone number'),
   carModel: z.string().min(1, 'Please select your car model'),
   issue: z.string().min(10, 'Please describe the issue in at least 10 characters'),
 })
@@ -26,14 +28,14 @@ export default function Contact() {
   const [preview, setPreview] = useState<string | null>(null)
   const [fileName, setFileName] = useState<string | null>(null)
   const [dragging, setDragging] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
 
   const {
     register,
     handleSubmit,
-    formState: { errors, isSubmitting },
+    formState: { errors },
     reset,
-    watch,
   } = useForm<FormData>({ resolver: zodResolver(schema) })
 
   const handleFile = (file: File) => {
@@ -54,16 +56,24 @@ export default function Contact() {
   }
 
   const onSubmit = async (data: FormData) => {
-    const imageNote = preview ? '\n\n📷 Image attached in browser preview' : ''
-    const message = `Hello, I would like a car service estimate.\n\n👤 Name: ${data.name}\n📱 Phone: ${data.phone}\n🚗 Car: ${data.carModel}\n🔧 Issue: ${data.issue}${imageNote}`
+    setSubmitting(true)
+    const photoNote = preview
+      ? "\n\nI'll attach a photo of the damage in this WhatsApp chat."
+      : ''
+    const message = `Hello, I would like a car service estimate.\n\nName: ${data.name}\nPhone: ${data.phone}\nCar: ${data.carModel}\nIssue: ${data.issue}${photoNote}`
 
-    toast.success('Opening WhatsApp...')
-    setTimeout(() => {
-      window.open(buildWhatsAppUrl(message), '_blank')
-      reset()
-      setPreview(null)
-      setFileName(null)
-    }, 1000)
+    if (preview) {
+      toast.success('Opening WhatsApp — please attach your photo there', { duration: 5000 })
+    } else {
+      toast.success('Opening WhatsApp...')
+    }
+
+    await new Promise((r) => setTimeout(r, 1000))
+    window.open(buildWhatsAppUrl(message), '_blank')
+    reset()
+    setPreview(null)
+    setFileName(null)
+    setSubmitting(false)
   }
 
   return (
@@ -78,7 +88,7 @@ export default function Contact() {
           <span className="text-accent text-sm font-semibold tracking-widest uppercase">Get In Touch</span>
           <h2 className="text-4xl sm:text-5xl font-bold text-white mt-3 mb-4">Book Your Repair</h2>
           <p className="text-white/40 max-w-xl mx-auto">
-            Fill in the form and we'll open WhatsApp with your details pre-filled for a quick response.
+            Fill in the form and we&apos;ll open WhatsApp with your details pre-filled for a quick response.
           </p>
         </motion.div>
 
@@ -133,14 +143,14 @@ export default function Contact() {
             viewport={{ once: true }}
             className="lg:col-span-3"
           >
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-5" noValidate>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <Input placeholder="Your name" {...register('name')} />
+                  <Input placeholder="Your name" autoComplete="name" {...register('name')} aria-invalid={!!errors.name} />
                   {errors.name && <p className="text-red-400 text-xs mt-1">{errors.name.message}</p>}
                 </div>
                 <div>
-                  <Input placeholder="Phone number" {...register('phone')} />
+                  <Input placeholder="Phone number" type="tel" autoComplete="tel" inputMode="tel" {...register('phone')} aria-invalid={!!errors.phone} />
                   {errors.phone && <p className="text-red-400 text-xs mt-1">{errors.phone.message}</p>}
                 </div>
               </div>
@@ -148,12 +158,14 @@ export default function Contact() {
               <div>
                 <select
                   {...register('carModel')}
+                  aria-invalid={!!errors.carModel}
+                  defaultValue=""
                   className="flex h-11 w-full rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-sm text-white transition-colors focus-visible:outline-none focus-visible:border-accent focus-visible:ring-1 focus-visible:ring-accent/50 disabled:cursor-not-allowed disabled:opacity-50"
                   style={{ colorScheme: 'dark' }}
                 >
-                  <option value="" className="bg-[#0d0d0d]">Select your car model</option>
+                  <option value="" disabled>Select your car model</option>
                   {CAR_MODELS.map((m) => (
-                    <option key={m.name} value={m.name} className="bg-[#0d0d0d]">
+                    <option key={m.name} value={m.name}>
                       {m.name}
                     </option>
                   ))}
@@ -162,11 +174,15 @@ export default function Contact() {
               </div>
 
               <div>
-                <Textarea placeholder="Describe the damage or service you need (e.g., dent on driver door, scratches on bonnet...)" {...register('issue')} />
+                <Textarea
+                  placeholder="Describe the damage or service you need (e.g., dent on driver door, scratches on bonnet...)"
+                  aria-invalid={!!errors.issue}
+                  {...register('issue')}
+                />
                 {errors.issue && <p className="text-red-400 text-xs mt-1">{errors.issue.message}</p>}
               </div>
 
-              {/* Image upload */}
+              {/* Image upload — preview-only; user attaches in WhatsApp */}
               <div>
                 {!preview ? (
                   <div
@@ -179,7 +195,10 @@ export default function Contact() {
                       if (file) handleFile(file)
                     }}
                     onClick={() => fileRef.current?.click()}
-                    className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-all ${
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fileRef.current?.click() } }}
+                    className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
                       dragging
                         ? 'border-accent/60 bg-accent/5'
                         : 'border-white/10 hover:border-white/20 hover:bg-white/[0.02]'
@@ -187,7 +206,7 @@ export default function Contact() {
                   >
                     <Upload className="w-6 h-6 text-white/30 mx-auto mb-2" />
                     <p className="text-white/40 text-sm">
-                      Drag & drop a photo or <span className="text-accent">browse</span>
+                      Preview a photo here, then attach it in WhatsApp
                     </p>
                     <p className="text-white/20 text-xs mt-1">JPEG, PNG, WebP · Max 5MB · Optional</p>
                     <input
@@ -199,25 +218,32 @@ export default function Contact() {
                     />
                   </div>
                 ) : (
-                  <div className="relative rounded-lg overflow-hidden border border-white/10">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={preview} alt="Preview" className="w-full h-40 object-cover" />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end p-3">
-                      <span className="text-white/60 text-xs truncate flex-1">{fileName}</span>
-                      <button
-                        type="button"
-                        onClick={() => { setPreview(null); setFileName(null) }}
-                        className="ml-2 p-1 rounded-full bg-black/40 hover:bg-black/60 transition-colors"
-                      >
-                        <X className="w-4 h-4 text-white/70" />
-                      </button>
+                  <>
+                    <div className="relative rounded-lg overflow-hidden border border-white/10">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={preview} alt="Preview" className="w-full h-40 object-cover" />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end p-3">
+                        <span className="text-white/60 text-xs truncate flex-1">{fileName}</span>
+                        <button
+                          type="button"
+                          onClick={() => { setPreview(null); setFileName(null) }}
+                          aria-label="Remove image"
+                          className="ml-2 p-1 rounded-full bg-black/40 hover:bg-black/60 transition-colors"
+                        >
+                          <X className="w-4 h-4 text-white/70" />
+                        </button>
+                      </div>
                     </div>
-                  </div>
+                    <p className="flex items-start gap-2 text-white/40 text-xs mt-2">
+                      <Info className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
+                      WhatsApp can&apos;t auto-attach files from a link — please re-attach this photo in the WhatsApp chat after submit.
+                    </p>
+                  </>
                 )}
               </div>
 
-              <Button type="submit" className="w-full" size="lg" disabled={isSubmitting}>
-                {isSubmitting ? 'Opening WhatsApp...' : 'Send via WhatsApp'}
+              <Button type="submit" className="w-full" size="lg" disabled={submitting}>
+                {submitting ? 'Opening WhatsApp...' : 'Send via WhatsApp'}
               </Button>
             </form>
           </motion.div>

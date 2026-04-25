@@ -1,11 +1,19 @@
 import { Wrench, Facebook, Instagram, Youtube, Phone, Mail, MapPin } from 'lucide-react'
 import { siteConfig, buildWhatsAppUrl } from '@/config/site'
+import { CAR_MODELS, SERVICES } from '@/data/models'
 
-const SERVICES_LINKS = ['Dent Repair', 'Scratch Removal', 'Bumper Repair', 'Panel Paint', 'Body Polishing', 'Accident Repair']
-const MODEL_LINKS = ['Alto K10', 'WagonR', 'Swift', 'Dzire', 'Brezza', 'Ertiga']
+const SOCIAL_ICONS = [
+  { key: 'facebook' as const, Icon: Facebook, label: 'Facebook' },
+  { key: 'instagram' as const, Icon: Instagram, label: 'Instagram' },
+  { key: 'youtube' as const, Icon: Youtube, label: 'YouTube' },
+]
 
 export default function Footer() {
   const year = new Date().getFullYear()
+  const socials = SOCIAL_ICONS.filter(({ key }) => {
+    const href = siteConfig.social[key]
+    return href && href !== '#'
+  })
 
   return (
     <footer className="bg-[#040404] border-t border-white/[0.04]">
@@ -23,38 +31,37 @@ export default function Footer() {
               </div>
             </div>
             <p className="text-white/30 text-sm leading-relaxed mb-5">{siteConfig.description}</p>
-            <div className="flex gap-3">
-              {[
-                { href: siteConfig.social.facebook, Icon: Facebook },
-                { href: siteConfig.social.instagram, Icon: Instagram },
-                { href: siteConfig.social.youtube, Icon: Youtube },
-              ].map(({ href, Icon }) => (
-                <a
-                  key={href}
-                  href={href}
-                  className="w-8 h-8 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center text-white/40 hover:text-white transition-all"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  <Icon className="w-4 h-4" />
-                </a>
-              ))}
-            </div>
+            {socials.length > 0 && (
+              <div className="flex gap-3">
+                {socials.map(({ key, Icon, label }) => (
+                  <a
+                    key={key}
+                    href={siteConfig.social[key]}
+                    aria-label={label}
+                    className="w-8 h-8 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center text-white/40 hover:text-white transition-all"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <Icon className="w-4 h-4" />
+                  </a>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Services */}
           <div>
             <h4 className="text-white font-semibold text-sm uppercase tracking-widest mb-5">Services</h4>
             <ul className="space-y-2.5">
-              {SERVICES_LINKS.map((s) => (
-                <li key={s}>
+              {SERVICES.slice(0, 6).map((s) => (
+                <li key={s.title}>
                   <a
-                    href={buildWhatsAppUrl(`Hi, I need ${s} for my car.`)}
+                    href={buildWhatsAppUrl(`Hi, I need ${s.title} for my car.`)}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-white/40 hover:text-white text-sm transition-colors"
                   >
-                    {s}
+                    {s.title}
                   </a>
                 </li>
               ))}
@@ -65,15 +72,15 @@ export default function Footer() {
           <div>
             <h4 className="text-white font-semibold text-sm uppercase tracking-widest mb-5">Models</h4>
             <ul className="space-y-2.5">
-              {MODEL_LINKS.map((m) => (
-                <li key={m}>
+              {CAR_MODELS.slice(0, 6).map((m) => (
+                <li key={m.name}>
                   <a
-                    href={buildWhatsAppUrl(`Hi, I need repair for my Maruti ${m}.`)}
+                    href={buildWhatsAppUrl(`Hi, I need repair for my Maruti ${m.name}.`)}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-white/40 hover:text-white text-sm transition-colors"
                   >
-                    Maruti {m}
+                    Maruti {m.name}
                   </a>
                 </li>
               ))}

@@ -1,7 +1,7 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { motion } from 'framer-motion'
+import { useEffect, useRef, useState } from 'react'
+import { motion, useReducedMotion } from 'framer-motion'
 import { ClipboardList, Wrench, CheckCircle } from 'lucide-react'
 
 const STEPS = [
@@ -25,31 +25,41 @@ const STEPS = [
   },
 ]
 
+const STEP_DURATION_MS = 3000
+
 export default function HowItWorks() {
   const [active, setActive] = useState(0)
-  const [progress, setProgress] = useState(0)
+  const reduceMotion = useReducedMotion()
+
+  // Refs to each step's progress bar — direct DOM mutation, no React re-render per frame
+  const barRefs = useRef<(HTMLDivElement | null)[]>([])
 
   useEffect(() => {
-    let start: number | null = null
-    const duration = 3000
+    if (reduceMotion) return
     let raf: number
+    let start: number | null = null
 
-    const animate = (ts: number) => {
-      if (!start) start = ts
+    const tick = (ts: number) => {
+      if (start === null) start = ts
       const elapsed = ts - start
-      const p = Math.min((elapsed / duration) * 100, 100)
-      setProgress(p)
-      if (elapsed >= duration) {
-        start = null
+      const pct = Math.min((elapsed / STEP_DURATION_MS) * 100, 100)
+      const bar = barRefs.current[active]
+      if (bar) bar.style.width = `${pct}%`
+
+      if (elapsed >= STEP_DURATION_MS) {
         setActive((prev) => (prev + 1) % STEPS.length)
-        setProgress(0)
+        return
       }
-      raf = requestAnimationFrame(animate)
+      raf = requestAnimationFrame(tick)
     }
 
-    raf = requestAnimationFrame(animate)
+    // Reset all bars and start the active one
+    barRefs.current.forEach((b, i) => { if (b) b.style.width = i === active ? '0%' : '0%' })
+    raf = requestAnimationFrame(tick)
     return () => cancelAnimationFrame(raf)
-  }, [active])
+  }, [active, reduceMotion])
+
+  const onSelect = (i: number) => setActive(i)
 
   return (
     <section id="how-it-works" className="py-24 bg-[#080808]">
@@ -79,8 +89,11 @@ export default function HowItWorks() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.15, duration: 0.5 }}
-                onClick={() => { setActive(i); setProgress(0) }}
-                className={`relative rounded-2xl border p-6 cursor-pointer transition-all duration-500 text-center ${
+                onClick={() => onSelect(i)}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSelect(i) } }}
+                className={`relative rounded-2xl border p-6 cursor-pointer transition-all duration-500 text-center focus:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
                   isActive
                     ? 'bg-white/[0.06] border-white/10 shadow-xl'
                     : 'bg-white/[0.02] border-white/[0.04] hover:bg-white/[0.04]'
@@ -111,15 +124,14 @@ export default function HowItWorks() {
                   {step.desc}
                 </p>
 
-                {/* Progress bar */}
-                {isActive && (
-                  <div className="mt-5 h-0.5 bg-white/10 rounded-full overflow-hidden">
-                    <div
-                      className="h-full rounded-full transition-none"
-                      style={{ width: `${progress}%`, background: step.color }}
-                    />
-                  </div>
-                )}
+                {/* Progress bar — width mutated directly via ref */}
+                <div className={`mt-5 h-0.5 bg-white/10 rounded-full overflow-hidden ${isActive ? '' : 'opacity-0'}`}>
+                  <div
+                    ref={(el) => { barRefs.current[i] = el }}
+                    className="h-full rounded-full"
+                    style={{ width: '0%', background: step.color }}
+                  />
+                </div>
               </motion.div>
             )
           })}

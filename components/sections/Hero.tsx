@@ -1,12 +1,11 @@
 'use client'
 
 import { useEffect, useState, useMemo, useRef } from 'react'
-import { motion } from 'framer-motion'
+import { motion, useReducedMotion } from 'framer-motion'
 import { ArrowRight, Star } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useCounter } from '@/hooks/useCounter'
-import { siteConfig } from '@/config/site'
-import { buildWhatsAppUrl } from '@/config/site'
+import { siteConfig, buildWhatsAppUrl } from '@/config/site'
 
 const TYPING_WORDS = ['Dent Repair', 'Scratch Removal', 'Bumper Restore', 'Full Polish', 'Accident Repair']
 
@@ -27,7 +26,8 @@ export default function Hero() {
   const [wordIdx, setWordIdx] = useState(0)
   const [displayed, setDisplayed] = useState('')
   const [deleting, setDeleting] = useState(false)
-  const [mousePos, setMousePos] = useState({ x: 0, y: 0 })
+  const meshRef = useRef<HTMLDivElement>(null)
+  const reduceMotion = useReducedMotion()
 
   // Typing animation
   useEffect(() => {
@@ -46,17 +46,17 @@ export default function Hero() {
     return () => clearTimeout(timeout)
   }, [displayed, deleting, wordIdx])
 
-  // Mouse parallax
+  // Mouse parallax — direct DOM mutation, no re-renders
   const handleMouseMove = (e: React.MouseEvent) => {
+    if (reduceMotion || !meshRef.current) return
     const { clientX, clientY, currentTarget } = e
     const { width, height, left, top } = currentTarget.getBoundingClientRect()
-    setMousePos({
-      x: (clientX - left - width / 2) / width,
-      y: (clientY - top - height / 2) / height,
-    })
+    const x = ((clientX - left - width / 2) / width) * 20
+    const y = ((clientY - top - height / 2) / height) * 20
+    meshRef.current.style.transform = `translate3d(${x}px, ${y}px, 0)`
   }
 
-  // Particles
+  // Particles — generated once
   const particles = useMemo(
     () =>
       Array.from({ length: 40 }, (_, i) => ({
@@ -64,7 +64,7 @@ export default function Hero() {
         x: Math.random() * 100,
         y: Math.random() * 100,
         size: Math.random() * 3 + 1,
-        duration: Math.random() * 10 + 8,
+        duration: Math.random() * 6 + 4,
         delay: Math.random() * 5,
         opacity: Math.random() * 0.5 + 0.1,
       })),
@@ -78,10 +78,7 @@ export default function Hero() {
       onMouseMove={handleMouseMove}
     >
       {/* Gradient mesh */}
-      <div
-        className="absolute inset-0 opacity-30 transition-transform duration-300"
-        style={{ transform: `translate(${mousePos.x * 20}px, ${mousePos.y * 20}px)` }}
-      >
+      <div ref={meshRef} className="absolute inset-0 opacity-30 transition-transform duration-300 will-change-transform">
         <div className="absolute top-1/4 left-1/4 w-96 h-96 rounded-full bg-accent/20 blur-[100px]" />
         <div className="absolute bottom-1/3 right-1/3 w-80 h-80 rounded-full bg-blue-600/15 blur-[80px]" />
       </div>
@@ -90,14 +87,15 @@ export default function Hero() {
       {particles.map((p) => (
         <div
           key={p.id}
-          className="absolute rounded-full bg-white animate-pulse"
+          className={`absolute rounded-full bg-white ${reduceMotion ? '' : 'animate-twinkle'}`}
           style={{
             left: `${p.x}%`,
             top: `${p.y}%`,
             width: p.size,
             height: p.size,
             opacity: p.opacity,
-            animationDuration: `${p.duration}s`,
+            ['--p-opacity' as string]: p.opacity,
+            ['--dur' as string]: `${p.duration}s`,
             animationDelay: `${p.delay}s`,
           }}
         />
@@ -138,7 +136,7 @@ export default function Hero() {
           Expert{' '}
           <span className="text-accent">
             {displayed}
-            <span className="animate-pulse">|</span>
+            <span className="animate-blink">|</span>
           </span>
           <br />
           <span className="text-white/80">for Your Maruti</span>
@@ -192,7 +190,7 @@ export default function Hero() {
       </div>
 
       {/* Scroll indicator */}
-      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 opacity-40">
+      <div aria-hidden="true" className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 opacity-40">
         <span className="text-white text-xs tracking-widest uppercase">Scroll</span>
         <div className="w-px h-12 bg-gradient-to-b from-white to-transparent" />
       </div>

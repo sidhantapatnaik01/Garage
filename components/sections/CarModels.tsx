@@ -1,21 +1,25 @@
 'use client'
 
-import { useRef, useEffect, useState } from 'react'
-import { motion } from 'framer-motion'
+import { useRef, useEffect } from 'react'
+import { motion, useReducedMotion } from 'framer-motion'
 import Image from 'next/image'
 import { ChevronRight } from 'lucide-react'
 import { CAR_MODELS } from '@/data/models'
 import { buildWhatsAppUrl } from '@/config/site'
 
-function ModelCard({ model, index }: { model: typeof CAR_MODELS[0]; index: number }) {
-  const [tilt, setTilt] = useState({ x: 0, y: 0 })
-  const [hovered, setHovered] = useState(false)
+function ModelCard({ model, index, reduceMotion }: { model: typeof CAR_MODELS[0]; index: number; reduceMotion: boolean }) {
+  const cardRef = useRef<HTMLDivElement>(null)
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (reduceMotion || !cardRef.current) return
     const rect = e.currentTarget.getBoundingClientRect()
     const x = ((e.clientY - rect.top) / rect.height - 0.5) * 15
     const y = ((e.clientX - rect.left) / rect.width - 0.5) * -15
-    setTilt({ x, y })
+    cardRef.current.style.transform = `perspective(800px) rotateX(${x}deg) rotateY(${y}deg) scale(1.03)`
+  }
+
+  const reset = () => {
+    if (cardRef.current) cardRef.current.style.transform = 'perspective(800px) rotateX(0) rotateY(0) scale(1)'
   }
 
   const handleClick = () => {
@@ -24,21 +28,16 @@ function ModelCard({ model, index }: { model: typeof CAR_MODELS[0]; index: numbe
 
   return (
     <motion.div
+      ref={cardRef}
       initial={{ opacity: 0, y: 30 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
       transition={{ delay: index * 0.08, duration: 0.5 }}
-      style={{
-        transform: hovered
-          ? `perspective(800px) rotateX(${tilt.x}deg) rotateY(${tilt.y}deg) scale(1.03)`
-          : 'perspective(800px) rotateX(0) rotateY(0) scale(1)',
-        transition: 'transform 0.2s ease',
-      }}
+      style={{ transform: 'perspective(800px) rotateX(0) rotateY(0) scale(1)', transition: 'transform 0.2s ease' }}
       onMouseMove={handleMouseMove}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => { setHovered(false); setTilt({ x: 0, y: 0 }) }}
+      onMouseLeave={reset}
       onClick={handleClick}
-      className="relative flex-shrink-0 w-72 rounded-2xl bg-white/[0.03] border border-white/[0.06] overflow-hidden cursor-pointer group"
+      className="relative flex-shrink-0 w-72 rounded-2xl bg-white/[0.03] border border-white/[0.06] overflow-hidden cursor-pointer group will-change-transform"
     >
       {/* Accent bar */}
       <div className="h-0.5 w-full" style={{ background: model.color }} />
@@ -82,18 +81,25 @@ export default function CarModels() {
   const posRef = useRef(0)
   const rafRef = useRef<number>()
   const pausedRef = useRef(false)
+  const lastTsRef = useRef<number>()
+  const reduceMotion = useReducedMotion() ?? false
 
   useEffect(() => {
     const track = trackRef.current
-    if (!track) return
+    if (!track || reduceMotion) return
     const cardWidth = 288 + 20
     const totalWidth = CAR_MODELS.length * cardWidth
+    const speed = 24 // px per second
 
-    const tick = () => {
+    const tick = (ts: number) => {
+      if (lastTsRef.current === undefined) lastTsRef.current = ts
+      const delta = (ts - lastTsRef.current) / 1000
+      lastTsRef.current = ts
+
       if (!pausedRef.current) {
-        posRef.current += 0.4
-        if (posRef.current >= totalWidth) posRef.current = 0
-        track.style.transform = `translateX(-${posRef.current}px)`
+        posRef.current += speed * delta
+        if (posRef.current >= totalWidth) posRef.current -= totalWidth
+        track.style.transform = `translate3d(-${posRef.current}px, 0, 0)`
       }
       rafRef.current = requestAnimationFrame(tick)
     }
@@ -106,10 +112,11 @@ export default function CarModels() {
 
     return () => {
       if (rafRef.current) cancelAnimationFrame(rafRef.current)
+      lastTsRef.current = undefined
       track.removeEventListener('mouseenter', pause)
       track.removeEventListener('mouseleave', resume)
     }
-  }, [])
+  }, [reduceMotion])
 
   return (
     <section id="models" className="py-24 bg-[#060606] overflow-hidden">
@@ -136,7 +143,7 @@ export default function CarModels() {
         <div ref={trackRef} className="flex gap-5 will-change-transform pb-4" style={{ width: 'max-content' }}>
           {/* Duplicate for seamless loop */}
           {[...CAR_MODELS, ...CAR_MODELS].map((model, i) => (
-            <ModelCard key={`${model.name}-${i}`} model={model} index={i % CAR_MODELS.length} />
+            <ModelCard key={`${model.name}-${i}`} model={model} index={i % CAR_MODELS.length} reduceMotion={reduceMotion} />
           ))}
         </div>
       </div>

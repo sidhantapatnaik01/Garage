@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { useState, useEffect, useRef } from 'react'
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
 import { Star, Quote } from 'lucide-react'
 
 const TESTIMONIALS = [
@@ -42,13 +42,29 @@ const TESTIMONIALS = [
   },
 ]
 
+const ROTATE_MS = 5000
+
 export default function Testimonials() {
   const [current, setCurrent] = useState(0)
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const reduceMotion = useReducedMotion()
+
+  const startTimer = () => {
+    if (timerRef.current) clearInterval(timerRef.current)
+    if (reduceMotion) return
+    timerRef.current = setInterval(() => setCurrent((i) => (i + 1) % TESTIMONIALS.length), ROTATE_MS)
+  }
 
   useEffect(() => {
-    const timer = setInterval(() => setCurrent((i) => (i + 1) % TESTIMONIALS.length), 5000)
-    return () => clearInterval(timer)
-  }, [])
+    startTimer()
+    return () => { if (timerRef.current) clearInterval(timerRef.current) }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [reduceMotion])
+
+  const goTo = (i: number) => {
+    setCurrent(i)
+    startTimer() // reset auto-rotate after manual selection
+  }
 
   const t = TESTIMONIALS[current]
 
@@ -65,44 +81,49 @@ export default function Testimonials() {
           <h2 className="text-4xl sm:text-5xl font-bold text-white mt-3 mb-4">What Customers Say</h2>
         </motion.div>
 
-        <div className="relative">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={current}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              transition={{ duration: 0.4 }}
-              className="bg-white/[0.03] border border-white/[0.06] rounded-2xl p-8 sm:p-10 text-center"
-            >
-              <Quote className="w-10 h-10 text-accent/30 mx-auto mb-6" />
+        <div className="relative" aria-roledescription="carousel">
+          <div aria-live="polite" aria-atomic="true">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={current}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                transition={{ duration: 0.4 }}
+                className="bg-white/[0.03] border border-white/[0.06] rounded-2xl p-8 sm:p-10 text-center"
+              >
+                <Quote className="w-10 h-10 text-accent/30 mx-auto mb-6" aria-hidden="true" />
 
-              <div className="flex justify-center gap-1 mb-6">
-                {[...Array(t.rating)].map((_, i) => (
-                  <Star key={i} className="w-5 h-5 text-yellow-400 fill-yellow-400" />
-                ))}
-              </div>
-
-              <p className="text-white/70 text-lg leading-relaxed max-w-2xl mx-auto mb-8">
-                "{t.text}"
-              </p>
-
-              <div>
-                <div className="text-white font-semibold">{t.name}</div>
-                <div className="text-white/40 text-sm mt-1">
-                  {t.car} · {t.location}
+                <div className="flex justify-center gap-1 mb-6" aria-label={`${t.rating} out of 5 stars`}>
+                  {[...Array(t.rating)].map((_, i) => (
+                    <Star key={i} className="w-5 h-5 text-yellow-400 fill-yellow-400" aria-hidden="true" />
+                  ))}
                 </div>
-              </div>
-            </motion.div>
-          </AnimatePresence>
+
+                <p className="text-white/70 text-lg leading-relaxed max-w-2xl mx-auto mb-8">
+                  &ldquo;{t.text}&rdquo;
+                </p>
+
+                <div>
+                  <div className="text-white font-semibold">{t.name}</div>
+                  <div className="text-white/40 text-sm mt-1">
+                    {t.car} · {t.location}
+                  </div>
+                </div>
+              </motion.div>
+            </AnimatePresence>
+          </div>
 
           {/* Dot nav */}
-          <div className="flex justify-center gap-2 mt-8">
-            {TESTIMONIALS.map((_, i) => (
+          <div className="flex justify-center gap-2 mt-8" role="tablist" aria-label="Choose testimonial">
+            {TESTIMONIALS.map((review, i) => (
               <button
                 key={i}
-                onClick={() => setCurrent(i)}
-                className={`h-1.5 rounded-full transition-all duration-300 ${
+                onClick={() => goTo(i)}
+                role="tab"
+                aria-selected={i === current}
+                aria-label={`Show testimonial ${i + 1} of ${TESTIMONIALS.length} — ${review.name}`}
+                className={`h-1.5 rounded-full transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
                   i === current ? 'w-8 bg-accent' : 'w-1.5 bg-white/20 hover:bg-white/40'
                 }`}
               />

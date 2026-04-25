@@ -38,8 +38,8 @@ export default function Services() {
             >
               {/* Gradient glow on hover */}
               <div
-                className={`absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none`}
-                style={{ background: `linear-gradient(135deg, ${service.gradient.replace('from-[', '').replace(']', '').split(' to-[')[0]}15, transparent)` }}
+                className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
+                style={{ background: `linear-gradient(135deg, ${service.color}15, transparent)` }}
               />
 
               <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${service.gradient} flex items-center justify-center text-xl mb-4 shadow-lg`}>
