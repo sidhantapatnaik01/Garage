@@ -5,13 +5,15 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { ArrowRight, ChevronDown } from 'lucide-react'
 import { SERVICES } from '@/data/models'
 import { buildWhatsAppUrl } from '@/config/site'
+import SectionBg from '@/components/SectionBg'
 
 export default function Services() {
   const [expanded, setExpanded] = useState<number | null>(null)
 
   return (
-    <section id="services" className="py-24 bg-[#060606]">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6">
+    <section id="services" className="relative py-24 bg-[#060606] overflow-hidden">
+      <SectionBg tone="mixed" />
+      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
 import { Menu, X, Wrench } from 'lucide-react'
 import { siteConfig } from '@/config/site'
 import { Button } from '@/components/ui/button'
@@ -19,6 +19,7 @@ export default function Header() {
   const [open, setOpen] = useState(false)
   const firstMobileLinkRef = useRef<HTMLButtonElement>(null)
   const lastFocusedRef = useRef<HTMLElement | null>(null)
+  const reduceMotion = useReducedMotion()
 
   // Track scroll, including initial position on mount
   useEffect(() => {
@@ -48,7 +49,12 @@ export default function Header() {
 
   const handleNav = (href: string) => {
     setOpen(false)
-    document.querySelector(href)?.scrollIntoView({ behavior: 'smooth' })
+    document.querySelector(href)?.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth' })
+  }
+
+  const scrollToTop = () => {
+    setOpen(false)
+    window.scrollTo({ top: 0, behavior: reduceMotion ? 'auto' : 'smooth' })
   }
 
   return (
@@ -59,16 +65,21 @@ export default function Header() {
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
-          {/* Logo */}
-          <div className="flex items-center gap-2.5">
+          {/* Logo — click to scroll to top */}
+          <button
+            type="button"
+            onClick={scrollToTop}
+            aria-label={`${siteConfig.name} — back to top`}
+            className="flex items-center gap-2.5 hover:opacity-80 transition-opacity focus:outline-none focus-visible:ring-2 focus-visible:ring-accent rounded-lg"
+          >
             <div className="w-8 h-8 rounded-lg bg-accent flex items-center justify-center shadow-lg shadow-accent/30">
               <Wrench className="w-4 h-4 text-white" />
             </div>
-            <div>
-              <span className="text-white font-bold text-lg leading-none">{siteConfig.name}</span>
+            <div className="text-left">
+              <span className="block text-white font-bold text-lg leading-none">{siteConfig.name}</span>
               <p className="text-white/40 text-xs leading-none mt-0.5">{siteConfig.location}</p>
             </div>
-          </div>
+          </button>
 
           {/* Desktop nav */}
           <nav className="hidden md:flex items-center gap-1" aria-label="Primary">

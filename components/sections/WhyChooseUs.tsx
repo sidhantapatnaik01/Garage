@@ -2,6 +2,7 @@
 
 import { motion } from 'framer-motion'
 import { ShieldCheck, Clock, Palette, Wrench, ThumbsUp, BadgePercent } from 'lucide-react'
+import SectionBg from '@/components/SectionBg'
 
 const REASONS = [
   {
@@ -44,8 +45,9 @@ const REASONS = [
 
 export default function WhyChooseUs() {
   return (
-    <section id="why-us" className="py-24 bg-[#060606]">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6">
+    <section id="why-us" className="relative py-24 bg-[#060606] overflow-hidden">
+      <SectionBg tone="purple" />
+      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}

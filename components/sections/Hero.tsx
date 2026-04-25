@@ -11,11 +11,11 @@ const TYPING_WORDS = ['Dent Repair', 'Scratch Removal', 'Bumper Restore', 'Full 
 
 function StatCard({ value, label, suffix = '' }: { value: number | string; label: string; suffix?: string }) {
   const isNum = typeof value === 'number'
-  const { count, ref } = useCounter(isNum ? (value as number) : 0)
+  const ref = useCounter(isNum ? (value as number) : 0)
   return (
-    <div ref={ref} className="text-center">
-      <div className="text-3xl font-bold text-white">
-        {isNum ? count : value}{suffix}
+    <div className="text-center">
+      <div className="text-3xl font-bold text-white tabular-nums">
+        {isNum ? <span ref={ref}>0</span> : value}{suffix}
       </div>
       <div className="text-white/50 text-xs mt-1">{label}</div>
     </div>
@@ -23,28 +23,60 @@ function StatCard({ value, label, suffix = '' }: { value: number | string; label
 }
 
 export default function Hero() {
-  const [wordIdx, setWordIdx] = useState(0)
-  const [displayed, setDisplayed] = useState('')
-  const [deleting, setDeleting] = useState(false)
   const meshRef = useRef<HTMLDivElement>(null)
+  const typingRef = useRef<HTMLSpanElement>(null)
   const reduceMotion = useReducedMotion()
+  const [isMobile, setIsMobile] = useState(false)
 
-  // Typing animation
+  // Detect mobile for particle count tuning
   useEffect(() => {
-    const word = TYPING_WORDS[wordIdx]
-    let timeout: ReturnType<typeof setTimeout>
-    if (!deleting && displayed.length < word.length) {
-      timeout = setTimeout(() => setDisplayed(word.slice(0, displayed.length + 1)), 80)
-    } else if (!deleting && displayed.length === word.length) {
-      timeout = setTimeout(() => setDeleting(true), 1800)
-    } else if (deleting && displayed.length > 0) {
-      timeout = setTimeout(() => setDisplayed(displayed.slice(0, -1)), 45)
-    } else {
-      setDeleting(false)
-      setWordIdx((i) => (i + 1) % TYPING_WORDS.length)
+    const mq = window.matchMedia('(max-width: 640px)')
+    const update = () => setIsMobile(mq.matches)
+    update()
+    mq.addEventListener('change', update)
+    return () => mq.removeEventListener('change', update)
+  }, [])
+
+  // Typing animation — entirely ref-based, no re-renders
+  useEffect(() => {
+    if (!typingRef.current) return
+    if (reduceMotion) {
+      typingRef.current.textContent = TYPING_WORDS[0]
+      return
     }
-    return () => clearTimeout(timeout)
-  }, [displayed, deleting, wordIdx])
+
+    let timeout: ReturnType<typeof setTimeout> | undefined
+    let wordIdx = 0
+    let charIdx = 0
+    let deleting = false
+
+    const tick = () => {
+      const word = TYPING_WORDS[wordIdx]
+      if (!deleting) {
+        if (charIdx < word.length) {
+          charIdx++
+          if (typingRef.current) typingRef.current.textContent = word.slice(0, charIdx)
+          timeout = setTimeout(tick, 80)
+        } else {
+          deleting = true
+          timeout = setTimeout(tick, 1800)
+        }
+      } else {
+        if (charIdx > 0) {
+          charIdx--
+          if (typingRef.current) typingRef.current.textContent = word.slice(0, charIdx)
+          timeout = setTimeout(tick, 45)
+        } else {
+          deleting = false
+          wordIdx = (wordIdx + 1) % TYPING_WORDS.length
+          timeout = setTimeout(tick, 100)
+        }
+      }
+    }
+
+    tick()
+    return () => { if (timeout) clearTimeout(timeout) }
+  }, [reduceMotion])
 
   // Mouse parallax — direct DOM mutation, no re-renders
   const handleMouseMove = (e: React.MouseEvent) => {
@@ -56,10 +88,11 @@ export default function Hero() {
     meshRef.current.style.transform = `translate3d(${x}px, ${y}px, 0)`
   }
 
-  // Particles — generated once
+  // Particles — count tuned for mobile
+  const particleCount = reduceMotion ? 0 : isMobile ? 16 : 40
   const particles = useMemo(
     () =>
-      Array.from({ length: 40 }, (_, i) => ({
+      Array.from({ length: particleCount }, (_, i) => ({
         id: i,
         x: Math.random() * 100,
         y: Math.random() * 100,
@@ -68,7 +101,7 @@ export default function Hero() {
         delay: Math.random() * 5,
         opacity: Math.random() * 0.5 + 0.1,
       })),
-    []
+    [particleCount]
   )
 
   return (
@@ -87,7 +120,7 @@ export default function Hero() {
       {particles.map((p) => (
         <div
           key={p.id}
-          className={`absolute rounded-full bg-white ${reduceMotion ? '' : 'animate-twinkle'}`}
+          className="absolute rounded-full bg-white animate-twinkle"
           style={{
             left: `${p.x}%`,
             top: `${p.y}%`,
@@ -135,7 +168,7 @@ export default function Hero() {
         >
           Expert{' '}
           <span className="text-accent">
-            {displayed}
+            <span ref={typingRef}>Dent Repair</span>
             <span className="animate-blink">|</span>
           </span>
           <br />
@@ -189,8 +222,8 @@ export default function Hero() {
         </motion.div>
       </div>
 
-      {/* Scroll indicator */}
-      <div aria-hidden="true" className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 opacity-40">
+      {/* Scroll indicator — hidden on phone (overlapped stats grid) */}
+      <div aria-hidden="true" className="hidden sm:flex absolute bottom-8 left-1/2 -translate-x-1/2 flex-col items-center gap-2 opacity-40">
         <span className="text-white text-xs tracking-widest uppercase">Scroll</span>
         <div className="w-px h-12 bg-gradient-to-b from-white to-transparent" />
       </div>

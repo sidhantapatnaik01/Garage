@@ -101,7 +101,7 @@ export default function Contact() {
             className="lg:col-span-2 space-y-6"
           >
             {[
-              { icon: MapPin, label: 'Address', value: siteConfig.address, sub: siteConfig.city },
+              { icon: MapPin, label: 'Address', value: siteConfig.address, sub: `${siteConfig.city}, ${siteConfig.region} ${siteConfig.postalCode}` },
               { icon: Phone, label: 'Phone', value: siteConfig.phone, sub: siteConfig.email },
               { icon: Clock, label: 'Hours', value: siteConfig.hours.weekdays, sub: siteConfig.hours.weekend },
             ].map(({ icon: Icon, label, value, sub }) => (

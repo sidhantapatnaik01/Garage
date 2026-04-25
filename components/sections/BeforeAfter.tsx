@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { motion, useReducedMotion } from 'framer-motion'
 import { GripVertical } from 'lucide-react'
+import SectionBg from '@/components/SectionBg'
 
 const CASES = [
   {
@@ -174,8 +175,9 @@ export default function BeforeAfter() {
   const [active, setActive] = useState(0)
 
   return (
-    <section id="before-after" className="py-24 bg-[#080808]">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6">
+    <section id="before-after" className="relative py-24 bg-[#080808] overflow-hidden">
+      <SectionBg tone="blue" />
+      <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}

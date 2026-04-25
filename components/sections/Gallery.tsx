@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, ZoomIn } from 'lucide-react'
+import SectionBg from '@/components/SectionBg'
 
 const CATEGORIES = ['All', 'Dents', 'Scratches', 'Bumpers', 'Polish']
 
@@ -45,8 +46,9 @@ export default function Gallery() {
   }, [lightbox])
 
   return (
-    <section id="gallery" className="py-24 bg-[#080808]">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6">
+    <section id="gallery" className="relative py-24 bg-[#080808] overflow-hidden">
+      <SectionBg tone="green" />
+      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}

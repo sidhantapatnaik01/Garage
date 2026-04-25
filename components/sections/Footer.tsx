@@ -94,7 +94,7 @@ export default function Footer() {
               <li className="flex gap-3">
                 <MapPin className="w-4 h-4 text-accent mt-0.5 flex-shrink-0" />
                 <div className="text-white/40 text-sm">
-                  {siteConfig.address}<br />{siteConfig.city}
+                  {siteConfig.address}<br />{siteConfig.city}, {siteConfig.region} {siteConfig.postalCode}
                 </div>
               </li>
               <li className="flex gap-3">
