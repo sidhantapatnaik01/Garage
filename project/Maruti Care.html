@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Maruti Care Nabarangapur — Car Repair & Restoration</title>
+  <meta name="description" content="Nabarangapur's trusted garage for Maruti Suzuki Arena car repair. Dent repair, scratch removal, bumper restoration, body polishing and more."/>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;0,9..40,800;1,9..40,400&display=swap" rel="stylesheet"/>
+
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    html { scroll-behavior: smooth; -webkit-font-smoothing: antialiased; }
+    body {
+      font-family: 'DM Sans', system-ui, sans-serif;
+      background: #0a0a0a; color: #fff;
+      overflow-x: hidden;
+    }
+    ::selection { background: rgba(230,57,70,0.3); color: #fff; }
+
+    /* Responsive nav */
+    @media (max-width: 768px) {
+      .desktop-nav { display: none !important; }
+      .mobile-menu-btn { display: block !important; }
+    }
+
+    /* Scroll reveal */
+    .scroll-reveal {
+      opacity: 0; transform: translateY(28px);
+      transition: opacity 0.7s cubic-bezier(0.4,0,0.2,1), transform 0.7s cubic-bezier(0.4,0,0.2,1);
+    }
+    .scroll-reveal.visible { opacity: 1; transform: translateY(0); }
+
+    .fade-up {
+      opacity: 0; transform: translateY(24px);
+      animation: fadeUp 0.8s cubic-bezier(0.4,0,0.2,1) forwards;
+    }
+    .fade-up:nth-child(2) { animation-delay: 0.15s; }
+    .fade-up:nth-child(3) { animation-delay: 0.3s; }
+    .fade-up:nth-child(4) { animation-delay: 0.45s; }
+    .fade-up:nth-child(5) { animation-delay: 0.6s; }
+
+    @keyframes fadeUp {
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes floatOrb {
+      0% { transform: translate(0, 0) scale(1); }
+      100% { transform: translate(30px, -20px) scale(1.1); }
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 0.6; transform: scale(1); }
+      50% { opacity: 1; transform: scale(1.15); }
+    }
+
+    /* 3D card tilt */
+    .car-card-3d {
+      transform-style: preserve-3d;
+      perspective: 800px;
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: #0a0a0a; }
+    ::-webkit-scrollbar-thumb { background: rgba(230,57,70,0.3); border-radius: 3px; }
+
+    /* Floating CTA */
+    .floating-cta {
+      position: fixed; bottom: 24px; right: 24px; z-index: 900;
+      background: linear-gradient(135deg, #e63946, #c62828);
+      color: #fff; padding: 14px 24px; border-radius: 14px;
+      font-size: 14px; font-weight: 700; text-decoration: none;
+      box-shadow: 0 8px 32px rgba(230,57,70,0.4);
+      display: flex; align-items: center; gap: 8;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .floating-cta:hover { transform: translateY(-2px); box-shadow: 0 12px 40px rgba(230,57,70,0.5); }
+    @media (max-width: 768px) {
+      .floating-cta { bottom: 16px; right: 16px; padding: 12px 18px; font-size: 13px; border-radius: 12px; }
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+  <script type="text/babel" src="tweaks-panel.jsx"></script>
+  <script type="text/babel" src="sections-top.jsx"></script>
+  <script type="text/babel" src="sections-mid.jsx"></script>
+  <script type="text/babel" src="sections-bottom.jsx"></script>
+
+  <script type="text/babel">
+    const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+      "accentColor": "#e63946",
+      "heroStyle": "gradient",
+      "cardStyle": "glass"
+    }/*EDITMODE-END*/;
+
+    function App() {
+      const tweaks = useTweaks(TWEAK_DEFAULTS);
+
+      // Scroll reveal observer
+      React.useEffect(() => {
+        const observer = new IntersectionObserver((entries) => {
+          entries.forEach(entry => {
+            if (entry.isIntersecting) {
+              entry.target.classList.add('visible');
+            }
+          });
+        }, { threshold: 0.08, rootMargin: '0px 0px -40px 0px' });
+
+        document.querySelectorAll('.scroll-reveal').forEach(el => observer.observe(el));
+        return () => observer.disconnect();
+      });
+
+      return (
+        <React.Fragment>
+          <Header />
+          <Hero />
+          <CarModels />
+          <BeforeAfter />
+          <Services />
+          <HowItWorks />
+          <WhyChooseUs />
+          <Gallery />
+          <Testimonials />
+          <Contact />
+          <Footer />
+
+          {/* Floating CTA */}
+          <a href="#contact" className="floating-cta">
+            📞 Get Estimate
+          </a>
+
+          <TweaksPanel title="Maruti Care Tweaks">
+            <TweakSection title="Theme">
+              <TweakColor label="Accent Color" value={tweaks.accentColor} onChange={v => tweaks.set('accentColor', v)} />
+              <TweakRadio label="Hero Style" value={tweaks.heroStyle} onChange={v => tweaks.set('heroStyle', v)}
+                options={[{value:'gradient',label:'Gradient'},{value:'minimal',label:'Minimal'},{value:'bold',label:'Bold'}]} />
+              <TweakRadio label="Card Style" value={tweaks.cardStyle} onChange={v => tweaks.set('cardStyle', v)}
+                options={[{value:'glass',label:'Glass'},{value:'solid',label:'Solid'},{value:'outline',label:'Outline'}]} />
+            </TweakSection>
+          </TweaksPanel>
+        </React.Fragment>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+</html>
